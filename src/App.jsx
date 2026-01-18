@@ -6,7 +6,7 @@ import {
 } from '@tanstack/react-table'
 import './App.css'
 
-// Documents to compare against master (SPA Version 1) - rows are Version 2 and Version 3
+// Documents to compare against master (SPA Version 1) - rows are Version 2, 3, and 4
 const defaultData = [
   { 
     id: 1, 
@@ -22,6 +22,13 @@ const defaultData = [
     prompt_2: 'Notice period: 15 months (compromise). Liability...',
     prompt_3: 'Reverted to England and Wales law. England court...',
   },
+  { 
+    id: 3, 
+    document: { name: 'SPA Version 4.pdf', type: 'pdf' },
+    prompt_1: 'Same base price. Adds earn-out up to GBP 3M...',
+    prompt_2: 'Adds claims basket of GBP 250,000. Notice 15...',
+    prompt_3: 'Introduces LCIA arbitration. Separates governin...',
+  },
 ]
 
 // Full responses for the modal view
@@ -29,14 +36,17 @@ const fullResponses = {
   prompt_1: {
     1: 'Purchase Price reduced from GBP 25,000,000 to GBP 22,500,000. New escrow of GBP 2,000,000 introduced for 12 months from Completion to secure warranty claims. Balance paid by same-day electronic transfer.',
     2: 'Purchase Price at GBP 23,250,000 (between V1 and V2). Escrow reduced to GBP 1,500,000 for 9 months. Interest on Escrow Amount accrues for the benefit of the Seller.',
+    3: 'Same base price as V3 (GBP 23,250,000). Adds earn-out clause of up to GBP 3,000,000 based on EBITDA performance for 12 months post-Completion, payable within 30 days of Earn-out Statement approval.',
   },
   prompt_2: {
     1: 'Notice period shortened from 18 months to 12 months. Liability cap reduced from 30% to 20% of Purchase Price. Disclosure Letter qualification added for warranty breaches.',
     2: 'Notice period: 15 months (compromise between 18 and 12). Liability cap: 25% (compromise between 30% and 20%). Fraud carve-out added - claims for fraud not subject to limitations.',
+    3: 'Same as V3 (15 months notice, 25% cap, fraud carve-out). Introduces claims basket of GBP 250,000 - no claim may be brought unless aggregate exceeds basket, then only for excess.',
   },
   prompt_3: {
     1: 'Changed from England and Wales to New York law. Jurisdiction moved from England courts to state and federal courts sitting in New York County, New York.',
     2: 'Reverted to England and Wales law (same as V1). England courts jurisdiction retained. Added forum waiver clause - each party waives objection on grounds of inconvenient forum.',
+    3: 'Introduces LCIA arbitration (London seat, English language, 3 arbitrators) instead of court jurisdiction. Separates governing law into own clause. Good faith negotiation required before arbitration.',
   },
 }
 
@@ -59,17 +69,17 @@ const mockResponses = {
   prompt_1: {
     1: 'Price reduced from GBP 25M to GBP 22.5M. New escrow of GBP 2M for 12 months introduced.',
     2: 'Price at GBP 23.25M (between V1 and V2). Escrow reduced to GBP 1.5M for 9 months. Interest accrues to Seller.',
-    3: 'HealthTech Innovations and Gamma Tech Partnership',
+    3: 'Same base price as V3. Adds earn-out up to GBP 3M based on EBITDA performance.',
   },
   prompt_2: {
     1: 'Notice period shortened: 18 months to 12 months. Liability cap reduced: 30% to 20%. Disclosure Letter qualification added.',
     2: 'Notice period: 15 months (compromise). Liability cap: 25% (compromise). Fraud carve-out added - not subject to limitations.',
-    3: 'HealthTech Innovations and MedData Systems',
+    3: 'Same as V3 plus claims basket of GBP 250,000. Claims only for excess over basket.',
   },
   prompt_3: {
     1: 'Changed from England and Wales to New York law. Jurisdiction moved to NY state/federal courts.',
     2: 'Reverted to England and Wales law. England courts with forum waiver clause added.',
-    3: 'HealthTech Innovations and MedData Systems',
+    3: 'Introduces LCIA arbitration (London). Separates governing law into own clause.',
   },
 }
 
@@ -100,6 +110,18 @@ The <del>Purchase Price shall be paid in full</del> <ins>balance of the Purchase
 The <del>Purchase Price shall be paid in full</del> <ins>balance of the Purchase Price shall be paid in full</ins> by same-day electronic transfer to the bank account notified by the Seller no later than two Business Days prior to Completion.
 
 <ins>Interest shall accrue on the Escrow Amount for the benefit of the Seller.</ins>`
+      },
+      3: {
+        title: '1. Purchase Price',
+        content: `The Buyer shall pay to the Seller a purchase price of <del>GBP 25,000,000</del> <ins>GBP 23,250,000</ins> (the Purchase Price) on Completion.
+
+<ins>An amount of GBP 1,500,000 shall be retained in escrow for 9 months from Completion to secure any warranty claims (the Escrow Amount).</ins>
+
+The <del>Purchase Price shall be paid in full</del> <ins>balance of the Purchase Price shall be paid in full</ins> by same-day electronic transfer to the bank account notified by the Seller no later than two Business Days prior to Completion.
+
+<ins>Interest shall accrue on the Escrow Amount for the benefit of the Seller.</ins>
+
+<ins>In addition, the Buyer shall pay an earn-out of up to GBP 3,000,000 based on EBITDA performance for the 12-month period following Completion, payable within 30 days of approval of the Earn-out Statement (clause 1A).</ins>`
       }
     }
   },
@@ -130,6 +152,18 @@ The aggregate liability of the Seller for all warranty claims shall not exceed <
 No party shall be liable for indirect or consequential loss, loss of profit, or loss of goodwill.
 
 <ins>Any claim for fraud shall not be subject to the limitations in this clause 4.</ins>`
+      },
+      3: {
+        title: '4. Limitations on Liability',
+        content: `The Seller shall not be liable for any claim unless written notice is given within <del>18 months</del> <ins>15 months</ins> of Completion.
+
+The aggregate liability of the Seller for all warranty claims shall not exceed <del>30%</del> <ins>25%</ins> of the Purchase Price.
+
+No party shall be liable for indirect or consequential loss, loss of profit, or loss of goodwill.
+
+<ins>Any claim for fraud shall not be subject to the limitations in this clause 4.</ins>
+
+<ins>No claim may be brought unless and until the aggregate amount of claims exceeds GBP 250,000 (the Basket), and then only for the excess over the Basket.</ins>`
       }
     }
   },
@@ -154,6 +188,20 @@ The <del>courts of England and Wales</del> <ins>state and federal courts sitting
 The courts of England and Wales shall have exclusive jurisdiction to settle any dispute arising out of or in connection with this Agreement.
 
 <ins>Each party irrevocably waives any objection to those courts on the grounds of inconvenient forum.</ins>`
+      },
+      3: {
+        title: '6. Dispute Resolution & 7. Governing Law',
+        content: `<ins>6. Dispute Resolution</ins>
+
+<ins>Any dispute arising out of or in connection with this Agreement shall first be referred to the parties' general counsel for good faith negotiation for a period of 15 Business Days.</ins>
+
+<ins>If the dispute is not resolved, it shall be finally settled by arbitration under the LCIA Rules by three arbitrators seated in London, and the language of the arbitration shall be English.</ins>
+
+<ins>7. Governing Law</ins>
+
+This Agreement and any <ins>non-contractual obligations arising out of or in connection with it</ins> shall be governed by the laws of England and Wales.
+
+<del>The courts of England and Wales shall have exclusive jurisdiction to settle any dispute arising out of or in connection with this Agreement.</del>`
       }
     }
   }
@@ -552,6 +600,7 @@ const allDocuments = [
   { id: 'master', name: 'SPA Version 1.pdf', type: 'master' },
   { id: 1, name: 'SPA Version 2.pdf', type: 'comparison' },
   { id: 2, name: 'SPA Version 3.pdf', type: 'comparison' },
+  { id: 3, name: 'SPA Version 4.pdf', type: 'comparison' },
 ]
 
 // Column definitions for the center panel
@@ -566,6 +615,8 @@ const SideBySidePanel = ({ isOpen, onClose, masterDoc, compareDoc, promptId, doc
   const [selectedDocId, setSelectedDocId] = useState(docId)
   const [selectedColumnId, setSelectedColumnId] = useState(promptId)
   const [expandedReasonings, setExpandedReasonings] = useState({})
+  const [viewMode, setViewMode] = useState('documents') // 'documents' or 'columns'
+  const [splitView, setSplitView] = useState(true) // Default to split view
   const documentListRef = useRef(null)
   
   // Update selected document and column when dialog opens or props change
@@ -662,17 +713,24 @@ const SideBySidePanel = ({ isOpen, onClose, masterDoc, compareDoc, promptId, doc
               Mark document as reviewed
             </button>
             <div className="dialog-view-toggles">
-              <button className="view-toggle active">
+              <button 
+                className={`view-toggle ${viewMode === 'documents' ? 'active' : ''}`}
+                onClick={() => setViewMode('documents')}
+                title="Documents first"
+              >
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M2 3H12M2 7H12M2 11H12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                  <rect x="1" y="2" width="4" height="10" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+                  <path d="M7 4H13M7 7H13M7 10H13" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
                 </svg>
               </button>
-              <button className="view-toggle">
+              <button 
+                className={`view-toggle ${viewMode === 'columns' ? 'active' : ''}`}
+                onClick={() => setViewMode('columns')}
+                title="Columns first"
+              >
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <rect x="2" y="2" width="4" height="4" stroke="currentColor" strokeWidth="1.2"/>
-                  <rect x="8" y="2" width="4" height="4" stroke="currentColor" strokeWidth="1.2"/>
-                  <rect x="2" y="8" width="4" height="4" stroke="currentColor" strokeWidth="1.2"/>
-                  <rect x="8" y="8" width="4" height="4" stroke="currentColor" strokeWidth="1.2"/>
+                  <path d="M1 4H7M1 7H7M1 10H7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                  <rect x="9" y="2" width="4" height="10" rx="1" stroke="currentColor" strokeWidth="1.2"/>
                 </svg>
               </button>
             </div>
@@ -686,8 +744,106 @@ const SideBySidePanel = ({ isOpen, onClose, masterDoc, compareDoc, promptId, doc
 
         {/* Three-panel content */}
         <div className="dialog-content">
-          {/* Left Panel - Document List */}
-          <div className="dialog-left-panel">
+          {/* Left Panel - Documents or Columns based on view mode */}
+          <div className={`dialog-left-panel ${viewMode === 'columns' ? 'columns-view' : ''}`}>
+            {viewMode === 'columns' ? (
+              /* Columns Panel */
+              <>
+                <div className="panel-header">
+                  <span className="panel-title">Columns</span>
+                  <span className="panel-count">{columnDefinitions.length}</span>
+                  <div className="panel-actions">
+                    <span className="jump-to-label">Jump to</span>
+                    <button className="panel-action-icon">
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M3 5L7 9L11 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div className="columns-list">
+                  {columnDefinitions.map((col) => {
+                    const answer = selectedDocId === 'master' 
+                      ? 'Master document - baseline for comparison'
+                      : getAnswer(selectedDocId, col.id)
+                    const isExpanded = expandedReasonings[col.id]
+                    const isSelected = selectedColumnId === col.id
+                    
+                    return (
+                      <div 
+                        key={col.id} 
+                        className={`column-field ${isSelected ? 'selected' : ''}`}
+                        onClick={() => setSelectedColumnId(col.id)}
+                      >
+                        <div className="field-header">
+                          <div className="field-title">
+                            <span className="field-icon">≡</span>
+                            <span className="field-name">{col.name}</span>
+                          </div>
+                          <div className="field-actions">
+                            <button className="field-action-icon" title="Flag">
+                              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                <path d="M2 1V11M2 1L10 3.5L2 6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </button>
+                            <button className="field-action-icon" title="Comment">
+                              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                <path d="M10 1H2C1.44772 1 1 1.44772 1 2V8C1 8.55228 1.44772 9 2 9H4L6 11L8 9H10C10.5523 9 11 8.55228 11 8V2C11 1.44772 10.5523 1 10 1Z" stroke="currentColor" strokeWidth="1.1"/>
+                              </svg>
+                            </button>
+                            <button className="field-action-icon" title="Status">
+                              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.1"/>
+                                <path d="M4 6L5.5 7.5L8 4.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                        <div className="field-content">
+                          <div className="field-label">Answer</div>
+                          <div className="field-answer">
+                            <span className="answer-text">{answer}</span>
+                            <button className="edit-btn">
+                              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                <path d="M8.5 1.5L10.5 3.5M1 11L1.5 8.5L9 1L11 3L3.5 10.5L1 11Z" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                        <div className="field-reasoning">
+                          <button 
+                            className="reasoning-toggle"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleReasoning(col.id)
+                            }}
+                          >
+                            <svg 
+                              width="10" height="10" viewBox="0 0 10 10" fill="none"
+                              style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
+                            >
+                              <path d="M3 2L7 5L3 8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            <span>Reasoning</span>
+                          </button>
+                          <div className="reasoning-badges">
+                            <span className="reasoning-badge">1</span>
+                            <span className="reasoning-badge">2</span>
+                          </div>
+                        </div>
+                        {isExpanded && (
+                          <div className="reasoning-content">
+                            <p>Based on comparison with the master document, the following changes were identified in this section...</p>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            ) : (
+              /* Documents Panel */
+              <>
             <div className="panel-header">
               <span className="panel-title">Documents</span>
               <span className="panel-count">{allDocuments.length}</span>
@@ -719,10 +875,50 @@ const SideBySidePanel = ({ isOpen, onClose, masterDoc, compareDoc, promptId, doc
                 </div>
               ))}
             </div>
+              </>
+            )}
           </div>
 
-          {/* Center Panel - Columns/Fields */}
-          <div className="dialog-center-panel">
+          {/* Center Panel - Documents or Columns based on view mode */}
+          <div className={`dialog-center-panel ${viewMode === 'columns' ? 'documents-view' : ''}`}>
+            {viewMode === 'columns' ? (
+              /* Documents Panel in center */
+              <>
+                <div className="panel-header">
+                  <span className="panel-title">Documents</span>
+                  <span className="panel-count">{allDocuments.length}</span>
+                  <div className="panel-actions">
+                    <button className="panel-action-icon">
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.2"/>
+                        <path d="M9.5 9.5L12.5 12.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                      </svg>
+                    </button>
+                    <button className="panel-action-icon">
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M2 4H12M5 7H12M2 10H12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div className="document-list">
+                  {allDocuments.map((doc, index) => (
+                    <div 
+                      key={doc.id}
+                      className={`document-list-item ${selectedDocId === doc.id ? 'selected' : ''} ${doc.type === 'master' ? 'master-item' : ''}`}
+                      onClick={() => setSelectedDocId(doc.id)}
+                    >
+                      <span className="doc-index">{index + 1}.</span>
+                      <PdfIcon />
+                      <span className="doc-list-name">{doc.name}</span>
+                      {doc.type === 'master' && <span className="master-badge">Master</span>}
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              /* Columns Panel in center */
+              <>
             <div className="panel-header">
               <span className="panel-title">Columns</span>
               <span className="panel-count">{columnDefinitions.length}</span>
@@ -819,6 +1015,8 @@ const SideBySidePanel = ({ isOpen, onClose, masterDoc, compareDoc, promptId, doc
                 )
               })}
             </div>
+              </>
+            )}
           </div>
 
           {/* Right Panel - Document Diff Preview */}
@@ -837,6 +1035,17 @@ const SideBySidePanel = ({ isOpen, onClose, masterDoc, compareDoc, promptId, doc
                 )}
               </div>
               <div className="preview-actions">
+                <button 
+                  className={`preview-action-icon ${splitView ? 'active' : ''}`} 
+                  title="Split View"
+                  onClick={() => setSplitView(!splitView)}
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <rect x="1" y="2" width="5" height="10" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+                    <rect x="8" y="2" width="5" height="10" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+                  </svg>
+                </button>
+                <div className="preview-action-divider"></div>
                 <button className="preview-action-icon" title="Zoom">
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                     <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.2"/>
@@ -862,8 +1071,106 @@ const SideBySidePanel = ({ isOpen, onClose, masterDoc, compareDoc, promptId, doc
                 </button>
               </div>
             </div>
-            <div className="document-preview-content">
-              {selectedDocId === 'master' ? (
+            <div className={`document-preview-content ${splitView ? 'split-view' : ''}`}>
+              {splitView && selectedDocId !== 'master' && currentDocSection ? (
+                /* Split View - Show Master and Comparison aligned by paragraph */
+                <div className="split-preview">
+                  <div className="split-header-row">
+                    <div className="split-column-header master-header">
+                      <PdfIcon />
+                      <span>SPA Version 1.pdf</span>
+                      <span className="master-badge">Master</span>
+                    </div>
+                    <div className="split-column-header comparison-header">
+                      <PdfIcon />
+                      <span>{selectedDoc?.name}</span>
+                      <span className="diff-badge">Diff</span>
+                    </div>
+                  </div>
+                  <div className="split-content">
+                    <div className="split-title-row">
+                      <div className="split-cell master-cell">
+                        <div className="preview-section-title">{sections?.master?.title}</div>
+                      </div>
+                      <div className="split-cell comparison-cell">
+                        <div className="preview-section-title">{currentDocSection?.title}</div>
+                      </div>
+                    </div>
+                    {(() => {
+                      // Parse master paragraphs
+                      const masterParagraphs = sections?.master?.content?.split('\n\n') || []
+                      
+                      // Parse comparison paragraphs and detect insertions
+                      const compContent = currentDocSection?.content || ''
+                      const compParagraphs = compContent.split('\n\n')
+                      
+                      // Build aligned rows
+                      const alignedRows = []
+                      let masterIdx = 0
+                      let compIdx = 0
+                      
+                      while (masterIdx < masterParagraphs.length || compIdx < compParagraphs.length) {
+                        const masterPara = masterParagraphs[masterIdx] || ''
+                        const compPara = compParagraphs[compIdx] || ''
+                        
+                        // Check if comparison paragraph is entirely new (starts with <ins>)
+                        const isFullyInserted = compPara.trim().startsWith('<ins>') && 
+                                                compPara.trim().endsWith('</ins>') &&
+                                                !compPara.includes('<del>')
+                        
+                        // Check if this paragraph was deleted (exists in master but fully deleted in comp)
+                        const isFullyDeleted = compPara.trim().startsWith('<del>') && 
+                                               compPara.trim().endsWith('</del>') &&
+                                               !compPara.includes('<ins>')
+                        
+                        if (isFullyInserted && masterIdx < masterParagraphs.length) {
+                          // New paragraph inserted - show empty on master side
+                          alignedRows.push({
+                            master: '',
+                            comparison: compPara,
+                            type: 'inserted'
+                          })
+                          compIdx++
+                        } else if (isFullyDeleted) {
+                          // Paragraph deleted - show on master, empty on comparison
+                          alignedRows.push({
+                            master: masterPara,
+                            comparison: compPara,
+                            type: 'deleted'
+                          })
+                          masterIdx++
+                          compIdx++
+                        } else {
+                          // Normal or modified paragraph
+                          alignedRows.push({
+                            master: masterPara,
+                            comparison: compPara,
+                            type: 'normal'
+                          })
+                          masterIdx++
+                          compIdx++
+                        }
+                      }
+                      
+                      return alignedRows.map((row, i) => (
+                        <div key={i} className={`split-row ${row.type}`}>
+                          <div className={`split-cell master-cell ${row.type === 'inserted' ? 'empty-cell' : ''}`}>
+                            <div className="preview-text">
+                              {row.master}
+                            </div>
+                          </div>
+                          <div className={`split-cell comparison-cell ${row.type === 'deleted' ? 'deleted-cell' : ''}`}>
+                            <div 
+                              className="preview-text preview-diff"
+                              dangerouslySetInnerHTML={renderContent(row.comparison)}
+                            />
+                          </div>
+                        </div>
+                      ))
+                    })()}
+                  </div>
+                </div>
+              ) : selectedDocId === 'master' ? (
                 <div className="preview-document">
                   <div className="preview-page">
                     <div className="preview-section">
