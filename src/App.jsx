@@ -1321,6 +1321,75 @@ const Sidebar = () => {
   )
 }
 
+// Onboarding Modal Component
+function OnboardingModal({ onClose, onGetStarted }) {
+  return (
+    <div className="onboarding-overlay">
+      <div className="onboarding-modal">
+        <button className="onboarding-close" onClick={onClose}>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
+        </button>
+        
+        <div className="onboarding-content">
+          <div className="onboarding-left">
+            <div className="onboarding-preview">
+              <img 
+                src="/onboarding-preview.png" 
+                alt="Mass Compare Preview" 
+                className="onboarding-image"
+              />
+            </div>
+          </div>
+          
+          <div className="onboarding-right">
+            <div className="onboarding-header">
+              <span className="onboarding-subtitle">Get started with</span>
+              <h1 className="onboarding-title">Mass Compare</h1>
+            </div>
+            
+            <div className="onboarding-features">
+              <div className="onboarding-feature">
+                <div className="feature-indicator"></div>
+                <div className="feature-content">
+                  <h3>Compare document versions</h3>
+                  <p>Upload multiple document versions and compare them against a master document. Instantly see what changed.</p>
+                </div>
+              </div>
+              
+              <div className="onboarding-feature">
+                <div className="feature-indicator"></div>
+                <div className="feature-content">
+                  <h3>Side-by-side diff view</h3>
+                  <p>View documents side by side with highlighted insertions, deletions, and modifications.</p>
+                </div>
+              </div>
+              
+              <div className="onboarding-feature">
+                <div className="feature-indicator"></div>
+                <div className="feature-content">
+                  <h3>Track all changes</h3>
+                  <p>Keep track of every change across all document versions in one organized table view.</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="onboarding-actions">
+              <button className="onboarding-btn secondary" onClick={onClose}>
+                Cancel
+              </button>
+              <button className="onboarding-btn primary" onClick={onGetStarted}>
+                Get Started
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function App() {
   const [data, setData] = useState(defaultData)
   const [selectedCells, setSelectedCells] = useState(new Set())
@@ -1343,6 +1412,7 @@ function App() {
   })
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [showCompareMenu, setShowCompareMenu] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(true)
   const [isComparing, setIsComparing] = useState(false)
   const [comparisonComplete, setComparisonComplete] = useState(true)
   const compareButtonRef = useRef(null)
@@ -1784,6 +1854,13 @@ function App() {
         summary={sideBySideData?.summary}
         promptText={sideBySideData?.promptText}
       />
+      
+      {showOnboarding && (
+        <OnboardingModal 
+          onClose={() => setShowOnboarding(false)}
+          onGetStarted={() => setShowOnboarding(false)}
+        />
+      )}
     </div>
   )
 }
