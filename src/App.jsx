@@ -408,12 +408,10 @@ const PromptCell = ({ getValue, row, column, table }) => {
   if (isComparing && !value) {
     return (
       <div className={cellClasses} onMouseDown={handleMouseDown}>
-        <span className="prompt-loading">
-          <span className="loading-dots">
-            <span></span><span></span><span></span>
-          </span>
-          Analyzing...
-        </span>
+        <div className="skeleton-container">
+          <div className="skeleton-line"></div>
+          <div className="skeleton-line short"></div>
+        </div>
       </div>
     )
   }
@@ -1304,6 +1302,50 @@ const Sidebar = () => {
   )
 }
 
+// Toast Component
+function Toast({ isVisible, onClose }) {
+  const [isClosing, setIsClosing] = useState(false)
+
+  const handleClose = () => {
+    setIsClosing(true)
+    setTimeout(() => {
+      setIsClosing(false)
+      onClose()
+    }, 200)
+  }
+
+  // Auto-hide after 8 seconds
+  useEffect(() => {
+    if (isVisible) {
+      const timer = setTimeout(() => {
+        handleClose()
+      }, 8000)
+      return () => clearTimeout(timer)
+    }
+  }, [isVisible])
+
+  if (!isVisible) return null
+
+  return (
+    <div className={`toast ${isClosing ? 'closing' : ''}`}>
+      <div className="toast-content">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="toast-icon">
+          <path d="M2 4L2 12C2 13.1046 2.89543 14 4 14H12C13.1046 14 14 13.1046 14 12V6C14 4.89543 13.1046 4 12 4H8L6 2H4C2.89543 2 2 2.89543 2 4Z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        <span>Download the master document:</span>
+        <a href="/SPA_Version_1.pdf" download className="toast-link">
+          SPA_Version_1.pdf
+        </a>
+      </div>
+      <button className="toast-close" onClick={handleClose}>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M9 3L3 9M3 3L9 9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+        </svg>
+      </button>
+    </div>
+  )
+}
+
 // Onboarding Modal Component
 function OnboardingModal({ onClose, onGetStarted }) {
   const [isClosing, setIsClosing] = useState(false)
@@ -1411,6 +1453,7 @@ function App() {
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [showCompareMenu, setShowCompareMenu] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(true)
+  const [showToast, setShowToast] = useState(false)
   const [isComparing, setIsComparing] = useState(false)
   const [comparisonComplete, setComparisonComplete] = useState(true)
   const compareButtonRef = useRef(null)
@@ -1441,6 +1484,7 @@ function App() {
     setMasterDocument(null)
     setComparisonComplete(false)
     setData(prev => prev.map(row => ({ id: row.id, document: row.document })))
+    setShowToast(true)
   }
 
   const handleRunComparison = () => {
@@ -1861,6 +1905,11 @@ function App() {
           onGetStarted={() => setShowOnboarding(false)}
         />
       )}
+      
+      <Toast 
+        isVisible={showToast}
+        onClose={() => setShowToast(false)}
+      />
     </div>
   )
 }
