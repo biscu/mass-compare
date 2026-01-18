@@ -1323,10 +1323,25 @@ const Sidebar = () => {
 
 // Onboarding Modal Component
 function OnboardingModal({ onClose, onGetStarted }) {
+  const [isClosing, setIsClosing] = useState(false)
+
+  const handleClose = () => {
+    setIsClosing(true)
+    setTimeout(() => {
+      onClose()
+    }, 200)
+  }
+
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) {
+      handleClose()
+    }
+  }
+
   return (
-    <div className="onboarding-overlay">
-      <div className="onboarding-modal">
-        <button className="onboarding-close" onClick={onClose}>
+    <div className={`onboarding-overlay ${isClosing ? 'closing' : ''}`} onClick={handleOverlayClick}>
+      <div className={`onboarding-modal ${isClosing ? 'closing' : ''}`}>
+        <button className="onboarding-close" onClick={handleClose}>
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
           </svg>
@@ -1376,10 +1391,10 @@ function OnboardingModal({ onClose, onGetStarted }) {
             </div>
             
             <div className="onboarding-actions">
-              <button className="onboarding-btn secondary" onClick={onClose}>
+              <button className="onboarding-btn secondary" onClick={handleClose}>
                 Cancel
               </button>
-              <button className="onboarding-btn primary" onClick={onGetStarted}>
+              <button className="onboarding-btn primary" onClick={handleClose}>
                 Get Started
               </button>
             </div>
