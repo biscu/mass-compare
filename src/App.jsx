@@ -1229,7 +1229,7 @@ const SideBySidePanel = ({ isOpen, onClose, masterDoc, compareDoc, promptId, doc
 }
 
 // Master Document Banner
-const MasterBanner = ({ document, onClear, onCompare, isComparing, comparisonComplete }) => {
+const MasterBanner = ({ document, onClear, isComparing, comparisonComplete }) => {
   return (
     <div className="master-banner">
       <div className="master-banner-content">
@@ -1237,28 +1237,11 @@ const MasterBanner = ({ document, onClear, onCompare, isComparing, comparisonCom
         <span className="master-doc-name">{document.name}</span>
       </div>
       <div className="master-banner-actions">
-        {comparisonComplete ? (
-          <span className="comparison-complete-badge">
-            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-              <path d="M13.5 4.5L6 12L2.5 8.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Done
+        {isComparing && (
+          <span className="comparison-status">
+            <span className="spinner"></span>
+            Comparing...
           </span>
-        ) : (
-          <button 
-            className="compare-action-btn" 
-            onClick={onCompare}
-            disabled={isComparing}
-          >
-            {isComparing ? (
-              <>
-                <span className="spinner"></span>
-                Comparing...
-              </>
-            ) : (
-              'Run Comparison'
-            )}
-          </button>
         )}
         <button className="clear-master-btn" onClick={onClear} title="Remove master">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -1431,6 +1414,7 @@ function App() {
   const [isComparing, setIsComparing] = useState(false)
   const [comparisonComplete, setComparisonComplete] = useState(true)
   const compareButtonRef = useRef(null)
+  const masterFileInputRef = useRef(null)
   
   // Side-by-side comparison state
   const [sideBySideData, setSideBySideData] = useState(null)
@@ -1694,32 +1678,29 @@ function App() {
                 <rect x="8" y="1" width="5" height="12" rx="1" stroke="currentColor" strokeWidth="1.2"/>
                 <path d="M4 5H10M4 7H10M4 9H10" stroke="currentColor" strokeWidth="0.8" strokeLinecap="round" opacity="0.5"/>
               </svg>
-              Compare
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className={showCompareMenu ? 'chevron-up' : ''}>
-                <path d="M2.5 4L5 6.5L7.5 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              {masterDocument ? `Comparing ${masterDocument.name}` : 'Compare'}
             </button>
             <DropdownMenu 
               isOpen={showCompareMenu} 
               onClose={() => setShowCompareMenu(false)}
               anchorRef={compareButtonRef}
             >
-              <button 
-                className="menu-item"
-                onClick={() => {
-                  setShowUploadModal(true)
-                  setShowCompareMenu(false)
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M7 1V9M7 1L4 4M7 1L10 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M1 9V12C1 12.5523 1.44772 13 2 13H12C12.5523 13 13 12.5523 13 12V9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                </svg>
-                Upload master document
-              </button>
-              {masterDocument && (
+              {!masterDocument ? (
+                <button 
+                  className="menu-item"
+                  onClick={() => {
+                    masterFileInputRef.current?.click()
+                    setShowCompareMenu(false)
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M7 1V9M7 1L4 4M7 1L10 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M1 9V12C1 12.5523 1.44772 13 2 13H12C12.5523 13 13 12.5523 13 12V9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                  </svg>
+                  Upload master document
+                </button>
+              ) : (
                 <>
-                  <div className="menu-divider" />
                   <button 
                     className="menu-item"
                     onClick={() => {
@@ -1756,23 +1737,18 @@ function App() {
             </svg>
             Language
           </button>
-          <button className="toolbar-btn">
+          <button 
+            className="toolbar-btn toolbar-btn-primary"
+            onClick={handleRunComparison}
+            disabled={!masterDocument || isComparing}
+          >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M4 7L6.5 9.5L10 4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M4 2.5L12 7L4 11.5V2.5Z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            Run
+            {isComparing ? 'Running...' : 'Run'}
           </button>
         </div>
 
-        {masterDocument && (
-          <MasterBanner 
-            document={masterDocument}
-            onClear={handleClearMaster}
-            onCompare={handleRunComparison}
-            isComparing={isComparing}
-            comparisonComplete={comparisonComplete}
-          />
-        )}
 
         {/* Table Area */}
         <div className="table-area">
@@ -1853,10 +1829,19 @@ function App() {
         />
       )}
       
-      <UploadModal 
-        isOpen={showUploadModal}
-        onClose={() => setShowUploadModal(false)}
-        onUpload={handleMasterUpload}
+      {/* Hidden file input for direct upload */}
+      <input
+        type="file"
+        ref={masterFileInputRef}
+        style={{ display: 'none' }}
+        accept=".pdf,.doc,.docx"
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          if (file) {
+            handleMasterUpload(file)
+          }
+          e.target.value = '' // Reset for re-upload
+        }}
       />
       
       <SideBySidePanel
