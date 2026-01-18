@@ -547,19 +547,72 @@ const UploadModal = ({ isOpen, onClose, onUpload }) => {
   )
 }
 
-// Side-by-Side Comparison Panel
-const SideBySidePanel = ({ isOpen, onClose, masterDoc, compareDoc, promptId, docId, summary, promptText }) => {
-  const [showAll, setShowAll] = useState(false)
+// Documents list for the panel
+const allDocuments = [
+  { id: 'master', name: 'SPA Version 1.pdf', type: 'master' },
+  { id: 1, name: 'SPA Version 2.pdf', type: 'comparison' },
+  { id: 2, name: 'SPA Version 3.pdf', type: 'comparison' },
+]
+
+// Column definitions for the center panel
+const columnDefinitions = [
+  { id: 'prompt_1', name: 'Purchase price terms', icon: '≡' },
+  { id: 'prompt_2', name: 'Liability limitations', icon: '≡' },
+  { id: 'prompt_3', name: 'Governing law changes', icon: '≡' },
+]
+
+// Side-by-Side Comparison Panel - Three Panel Layout
+const SideBySidePanel = ({ isOpen, onClose, masterDoc, compareDoc, promptId, docId, summary, promptText, allData }) => {
+  const [selectedDocId, setSelectedDocId] = useState(docId)
+  const [selectedColumnId, setSelectedColumnId] = useState(promptId)
+  const [expandedReasonings, setExpandedReasonings] = useState({})
+  const documentListRef = useRef(null)
+  
+  // Update selected document and column when dialog opens or props change
+  useEffect(() => {
+    if (isOpen && docId !== undefined && docId !== null) {
+      setSelectedDocId(docId)
+    }
+  }, [isOpen, docId])
+  
+  useEffect(() => {
+    if (isOpen && promptId) {
+      setSelectedColumnId(promptId)
+    }
+  }, [isOpen, promptId])
+
+  // Keyboard navigation for document list
+  const handleKeyDown = useCallback((e) => {
+    if (!isOpen) return
+    
+    const currentIndex = allDocuments.findIndex(doc => doc.id === selectedDocId)
+    
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      const nextIndex = Math.min(currentIndex + 1, allDocuments.length - 1)
+      setSelectedDocId(allDocuments[nextIndex].id)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      const prevIndex = Math.max(currentIndex - 1, 0)
+      setSelectedDocId(allDocuments[prevIndex].id)
+    } else if (e.key === 'Escape') {
+      onClose()
+    }
+  }, [isOpen, selectedDocId, onClose])
+
+  // Add keyboard listener when dialog is open
+  useEffect(() => {
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown)
+      return () => window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isOpen, handleKeyDown])
   
   if (!isOpen) return null
 
-  const sections = mockDocumentSections[promptId]
-  if (!sections) return null
-
-  const masterSection = sections.master
-  const docSection = sections.docs?.[docId]
-  if (!docSection) return null
-
+  const sections = mockDocumentSections[selectedColumnId]
+  const currentDocSection = sections?.docs?.[selectedDocId]
+  
   // Parse content with diff markup
   const renderContent = (html) => {
     return { __html: html }
@@ -570,89 +623,306 @@ const SideBySidePanel = ({ isOpen, onClose, masterDoc, compareDoc, promptId, doc
     onClose()
   }
 
-  // Get all document names for display
-  const docNames = {
-    1: 'SPA Version 2.pdf',
-    2: 'SPA Version 3.pdf',
+  const toggleReasoning = (colId) => {
+    setExpandedReasonings(prev => ({
+      ...prev,
+      [colId]: !prev[colId]
+    }))
   }
 
+  // Get answer for a specific document and column
+  const getAnswer = (docId, colId) => {
+    return fullResponses[colId]?.[docId] || '—'
+  }
+
+  // Get document by id
+  const getDocById = (id) => {
+    if (id === 'master') return { name: masterDoc?.name || 'SPA Version 1.pdf' }
+    return allDocuments.find(d => d.id === id)
+  }
+
+  const selectedDoc = getDocById(selectedDocId)
+
   return (
-    <div className="sidebyside-overlay" onClick={handleOverlayClick}>
-      <div className={`sidebyside-panel ${showAll ? 'panel-wide' : ''}`} onClick={(e) => e.stopPropagation()}>
-        <div className="sidebyside-header">
-          <h2>Document Comparison</h2>
-          <div className="header-actions">
-            <button 
-              className={`see-all-btn ${showAll ? 'active' : ''}`}
-              onClick={() => setShowAll(!showAll)}
-            >
-              {showAll ? 'Show 2' : 'See All'}
+    <div className="dialog-overlay" onClick={handleOverlayClick}>
+      <div className="dialog-panel" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="dialog-header">
+          <div className="dialog-header-left">
+            <span className="dialog-breadcrumb">A quite small boy</span>
+            <span className="dialog-separator">/</span>
+            <span className="dialog-title">{selectedDoc?.name}</span>
+          </div>
+          <div className="dialog-header-right">
+            <button className="dialog-action-btn">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.2"/>
+                <path d="M7 4V7L9 9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+              </svg>
+              Mark document as reviewed
             </button>
-            <button className="sidebyside-close" onClick={onClose}>
+            <div className="dialog-view-toggles">
+              <button className="view-toggle active">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M2 3H12M2 7H12M2 11H12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                </svg>
+              </button>
+              <button className="view-toggle">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <rect x="2" y="2" width="4" height="4" stroke="currentColor" strokeWidth="1.2"/>
+                  <rect x="8" y="2" width="4" height="4" stroke="currentColor" strokeWidth="1.2"/>
+                  <rect x="2" y="8" width="4" height="4" stroke="currentColor" strokeWidth="1.2"/>
+                  <rect x="8" y="8" width="4" height="4" stroke="currentColor" strokeWidth="1.2"/>
+                </svg>
+              </button>
+            </div>
+            <button className="dialog-close-btn" onClick={onClose}>
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M11 3L3 11M3 3L11 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
               </svg>
             </button>
           </div>
         </div>
-        
-        {summary && (
-          <div className="sidebyside-summary">
-            <div className="summary-question">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.2"/>
-                <path d="M6 9V5M6 4V3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-              </svg>
-              {promptText}
+
+        {/* Three-panel content */}
+        <div className="dialog-content">
+          {/* Left Panel - Document List */}
+          <div className="dialog-left-panel">
+            <div className="panel-header">
+              <span className="panel-title">Documents</span>
+              <span className="panel-count">{allDocuments.length}</span>
+              <div className="panel-actions">
+                <button className="panel-action-icon">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.2"/>
+                    <path d="M9.5 9.5L12.5 12.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+                <button className="panel-action-icon">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 4H12M5 7H12M2 10H12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div className="summary-answer">{summary}</div>
+            <div className="document-list">
+              {allDocuments.map((doc, index) => (
+                <div 
+                  key={doc.id}
+                  className={`document-list-item ${selectedDocId === doc.id ? 'selected' : ''} ${doc.type === 'master' ? 'master-item' : ''}`}
+                  onClick={() => setSelectedDocId(doc.id)}
+                >
+                  <span className="doc-index">{index + 1}.</span>
+                  <PdfIcon />
+                  <span className="doc-list-name">{doc.name}</span>
+                  {doc.type === 'master' && <span className="master-badge">Master</span>}
+                </div>
+              ))}
+            </div>
           </div>
-        )}
-        
-        <div className={`sidebyside-content ${showAll ? 'three-way' : ''}`}>
-          <div className="sidebyside-doc master-side">
-            <div className="doc-header">
-              <span className="doc-label">Master (V1)</span>
-              <span className="doc-name">{masterDoc?.name || 'SPA Version 1.pdf'}</span>
+
+          {/* Center Panel - Columns/Fields */}
+          <div className="dialog-center-panel">
+            <div className="panel-header">
+              <span className="panel-title">Columns</span>
+              <span className="panel-count">{columnDefinitions.length}</span>
+              <div className="panel-actions">
+                <span className="jump-to-label">Jump to</span>
+                <button className="panel-action-icon">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M3 5L7 9L11 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+                <button className="panel-action-icon">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 4L5 7L2 10M8 4H12M8 10H12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div className="doc-section">
-              <h3>{masterSection.title}</h3>
-              <div className="doc-text">{masterSection.content}</div>
-            </div>
-          </div>
-          <div className="sidebyside-divider" />
-          {showAll ? (
-            <>
-              {[1, 2].map((id) => sections.docs?.[id] && (
-                <React.Fragment key={id}>
-                  <div className={`sidebyside-doc ${id === docId ? 'compare-side' : 'v2-side'}`}>
-                    <div className="doc-header">
-                      <span className={`doc-label ${id === docId ? '' : 'v2-label'}`}>
-                        V{id + 1} {id === docId ? '(Current)' : ''}
-                      </span>
-                      <span className="doc-name">{docNames[id]}</span>
+            <div className="columns-list">
+              {columnDefinitions.map((col) => {
+                const answer = selectedDocId === 'master' 
+                  ? 'Master document - baseline for comparison'
+                  : getAnswer(selectedDocId, col.id)
+                const isExpanded = expandedReasonings[col.id]
+                const isSelected = selectedColumnId === col.id
+                
+                return (
+                  <div 
+                    key={col.id} 
+                    className={`column-field ${isSelected ? 'selected' : ''}`}
+                    onClick={() => setSelectedColumnId(col.id)}
+                  >
+                    <div className="field-header">
+                      <div className="field-title">
+                        <span className="field-icon">≡</span>
+                        <span className="field-name">{col.name}</span>
+                      </div>
+                      <div className="field-actions">
+                        <button className="field-action-icon" title="Flag">
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 1V11M2 1L10 3.5L2 6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </button>
+                        <button className="field-action-icon" title="Comment">
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M10 1H2C1.44772 1 1 1.44772 1 2V8C1 8.55228 1.44772 9 2 9H4L6 11L8 9H10C10.5523 9 11 8.55228 11 8V2C11 1.44772 10.5523 1 10 1Z" stroke="currentColor" strokeWidth="1.1"/>
+                          </svg>
+                        </button>
+                        <button className="field-action-icon" title="Status">
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.1"/>
+                            <path d="M4 6L5.5 7.5L8 4.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </button>
+                      </div>
                     </div>
-                    <div className="doc-section">
-                      <h3>{sections.docs[id].title}</h3>
-                      <div className="doc-text doc-diff" dangerouslySetInnerHTML={renderContent(sections.docs[id].content)} />
+                    <div className="field-content">
+                      <div className="field-label">Answer</div>
+                      <div className="field-answer">
+                        <span className="answer-text">{answer}</span>
+                        <button className="edit-btn">
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M8.5 1.5L10.5 3.5M1 11L1.5 8.5L9 1L11 3L3.5 10.5L1 11Z" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                    <div className="field-reasoning">
+                      <button 
+                        className="reasoning-toggle"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleReasoning(col.id)
+                        }}
+                      >
+                        <svg 
+                          width="10" height="10" viewBox="0 0 10 10" fill="none"
+                          style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
+                        >
+                          <path d="M3 2L7 5L3 8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        <span>Reasoning</span>
+                      </button>
+                      <div className="reasoning-badges">
+                        <span className="reasoning-badge">1</span>
+                        <span className="reasoning-badge">2</span>
+                      </div>
+                    </div>
+                    {isExpanded && (
+                      <div className="reasoning-content">
+                        <p>Based on comparison with the master document, the following changes were identified in this section...</p>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Right Panel - Document Diff Preview */}
+          <div className="dialog-right-panel">
+            <div className="document-preview-header">
+              <div className="preview-tabs">
+                <div className="preview-tab active">
+                  <PdfIcon />
+                  <span>{selectedDoc?.name}</span>
+                  {selectedDocId === 'master' && <span className="master-badge">Master</span>}
+                </div>
+                {selectedDocId !== 'master' && (
+                  <div className="preview-tab-info">
+                    vs Master (SPA Version 1.pdf)
+                  </div>
+                )}
+              </div>
+              <div className="preview-actions">
+                <button className="preview-action-icon" title="Zoom">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.2"/>
+                    <path d="M9.5 9.5L12.5 12.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                    <path d="M4 6H8M6 4V8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+                <button className="preview-action-icon" title="Fit">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 5V2H5M9 2H12V5M12 9V12H9M5 12H2V9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+                <button className="preview-action-icon" title="Print">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M3.5 5V1.5H10.5V5M3.5 10H2C1.44772 10 1 9.55228 1 9V6C1 5.44772 1.44772 5 2 5H12C12.5523 5 13 5.44772 13 6V9C13 9.55228 12.5523 10 12 10H10.5M3.5 8H10.5V12.5H3.5V8Z" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+                <button className="preview-action-icon" title="Search">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.2"/>
+                    <path d="M9.5 9.5L12.5 12.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="document-preview-content">
+              {selectedDocId === 'master' ? (
+                <div className="preview-document">
+                  <div className="preview-page">
+                    <div className="preview-section">
+                      <div className="preview-section-title">{sections?.master?.title}</div>
+                      <div className="preview-text">
+                        {sections?.master?.content}
+                      </div>
                     </div>
                   </div>
-                  {id < 2 && <div className="sidebyside-divider" />}
-                </React.Fragment>
-              ))}
-            </>
-          ) : (
-            <div className="sidebyside-doc compare-side">
-              <div className="doc-header">
-                <span className="doc-label">V{docId + 1}</span>
-                <span className="doc-name">{compareDoc?.name || docNames[docId]}</span>
-              </div>
-              <div className="doc-section">
-                <h3>{docSection.title}</h3>
-                <div className="doc-text doc-diff" dangerouslySetInnerHTML={renderContent(docSection.content)} />
+                </div>
+              ) : currentDocSection ? (
+                <div className="preview-document">
+                  <div className="preview-page">
+                    <div className="preview-section">
+                      <div className="preview-section-title">{currentDocSection.title}</div>
+                      <div 
+                        className="preview-text preview-diff" 
+                        dangerouslySetInnerHTML={renderContent(currentDocSection.content)} 
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="preview-empty">
+                  <p>Select a document and column to view comparison</p>
+                </div>
+              )}
+            </div>
+            <div className="document-preview-footer">
+              <button className="page-nav-btn">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M8 10L4 6L8 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              <span className="page-indicator">1/3</span>
+              <button className="page-nav-btn">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M4 2L8 6L4 10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              <div className="zoom-controls">
+                <button className="zoom-btn">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" strokeWidth="1.1"/>
+                    <path d="M8.5 8.5L11 11" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+                    <path d="M3.5 5.5H7.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+                  </svg>
+                </button>
+                <span className="zoom-level">105%</span>
+                <button className="zoom-btn">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" strokeWidth="1.1"/>
+                    <path d="M8.5 8.5L11 11" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+                    <path d="M3.5 5.5H7.5M5.5 3.5V7.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+                  </svg>
+                </button>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
