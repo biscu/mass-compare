@@ -1022,17 +1022,9 @@ const SideBySidePanel = ({ isOpen, onClose, masterDoc, compareDoc, promptId, doc
           {/* Right Panel - Document Diff Preview */}
           <div className="dialog-right-panel">
             <div className="document-preview-header">
-              <div className="preview-tabs">
-                <div className="preview-tab active">
-                  <PdfIcon />
-                  <span>{selectedDoc?.name}</span>
-                  {selectedDocId === 'master' && <span className="master-badge">Master</span>}
-                </div>
-                {selectedDocId !== 'master' && (
-                  <div className="preview-tab-info">
-                    vs Master (SPA Version 1.pdf)
-                  </div>
-                )}
+              <div className="preview-title">
+                <span>{selectedDoc?.name}</span>
+                {selectedDocId === 'master' && <span className="master-badge">Master</span>}
               </div>
               <div className="preview-actions">
                 <button 
